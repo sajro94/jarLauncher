@@ -11,6 +11,7 @@ public class downloadWorker extends SwingWorker<String, Long> {
 
 	@Override
 	protected String doInBackground() throws Exception {
+		System.out.println("Downloading");
 		URL website = new URL("http://www.sajro.org/VTGLAN/VTGLAN/VTGLAN.zip");
 		ReadableByteChannel rbc = Channels.newChannel(website.openStream());
 		@SuppressWarnings("resource")
@@ -18,5 +19,5 @@ public class downloadWorker extends SwingWorker<String, Long> {
 		fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
 		return null;
 	}
-	
+
 }
