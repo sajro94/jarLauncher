@@ -160,7 +160,7 @@ public class gui {
 				}
 				delayWorker.cancel(true);
 				autoLaunch = false;
-				launchButton.setText("Launching Minecraft\nOr downloading Modpack");
+				launchButton.setText("Launching");
 			}
 		});
 		launchButton.setFont(new Font("Tahoma", Font.BOLD, 14));
