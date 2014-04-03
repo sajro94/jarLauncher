@@ -101,6 +101,10 @@ public class gui {
 			propPassword = prop.getProperty("Password");
 			propRam = prop.getProperty("Ram");
 			installed = prop.getProperty("Installed");
+			if(installed == null)
+			{
+				installed = "no";
+			}
 			}
 		} catch (Exception ex) {
 			ex.printStackTrace();

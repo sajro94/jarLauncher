@@ -21,19 +21,32 @@ public class LauncherClass {
 	String dir;
 	String user;
 	String session;
+	String pass;
 	String ramUsing;
+	String ram;
+	Properties prop = new Properties();
+	String installedModpack = "no";
+	OutputStream propOut = null;
+	InputStream input = null;
 
-	public void main(String username, String password, String ramUsing,
-			String dir) throws IOException {
-		Properties prop = new Properties();
-		OutputStream propOut = null;
+	public void main(String username, String password, String ramUsing,String dir) throws IOException 
+	{
+		user = username;
+		pass = password;
+		ram = ramUsing;
 		try {
-			propOut = new FileOutputStream("LauncherConfig.properties");
-			// Sets the values I want to store
-			prop.setProperty("Username", username);
-			prop.setProperty("Password", password);
-			prop.setProperty("Ram", ramUsing);
-			prop.setProperty("Installed", "yes");
+			String propFile = "launcherConfig.properties";
+			input = getClass().getClassLoader().getResourceAsStream(propFile);
+			if (input == null) {
+				System.out.println("Sorry, unable to find " + propFile);
+			}
+			prop.load(input);
+			installedModpack = prop.getProperty("InstalledModpack");
+			if(installedModpack == null)
+			{
+				installedModpack = "no";
+			}
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -60,7 +73,6 @@ public class LauncherClass {
 			user = sessions[2];
 			prop.setProperty("sessionUser", user);
 			prop.setProperty("session", session);
-			prop.store(propOut, null);
 		} else {
 			session = "badLogin";
 		}
@@ -120,18 +132,43 @@ public class LauncherClass {
 							e.printStackTrace();
 						}
 						if (localVersion.equals(modPackVersion)) {
-							launchModPack(ramUsing, dir, user, session);
+							try {
+								launchModPack(ramUsing, dir, user, session);
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
 						} else {
-							clean_folder(dir);
+							if(!installedModpack.equals("yes"))
+							{
 							new progressBar().main();
+							clean_folder(dir);
+							}
+							else
+							{
+								new updateWorker().execute();
+							}
 						}
 					} else {
-						clean_folder(dir);
+						if(!installedModpack.equals("yes"))
+						{
 						new progressBar().main();
+						clean_folder(dir);
+						}
+						else
+						{
+							new updateWorker().execute();
+						}
 					}
 				} else {
-					clean_folder(dir);
+					if(!installedModpack.equals("yes"))
+					{
 					new progressBar().main();
+					clean_folder(dir);
+					}
+					else
+					{
+						new updateWorker().execute();
+					}
 				}
 			} else {
 				clean_folder(dir);
@@ -185,8 +222,8 @@ public class LauncherClass {
 
 	}
 
-	public void extractModPack(String ramUsing, String user, String token)
-			throws Exception {
+	public void extractModPack(String ramUsing, String user, String token)throws Exception 
+	{
 		dir = System.getProperty("user.dir");
 		String zipFile = dir + "\\VTGLAN.zip";
 		String outputFolder = dir;
@@ -217,13 +254,25 @@ public class LauncherClass {
 		}
 		zis.closeEntry();
 		zis.close();
-
 		System.out.println(zipFile + " unzipped successfully");
-		launchModPack(ramUsing, dir, user, token);
+		
 	}
 
-	public void launchModPack(String ramUsing, String dirCurrent, String user,String token) 
+	public void launchModPack(String ramUsing, String dirCurrent, String user,String token) throws Exception 
 	{
+		propOut = new FileOutputStream("LauncherConfig.properties");
+		try {
+			prop.setProperty("Username", user);
+			prop.setProperty("Password", pass);
+			prop.setProperty("Ram", ram);
+			prop.setProperty("Installed", "yes");
+		prop.setProperty("InstalledModpack", "yes");
+		prop.store(propOut, null);
+		}
+		catch(Exception e)
+		{
+			
+		}
 		console.main(null);
 	}
 
