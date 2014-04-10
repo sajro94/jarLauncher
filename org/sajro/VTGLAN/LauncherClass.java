@@ -40,11 +40,14 @@ public class LauncherClass {
 			if (input == null) {
 				System.out.println("Sorry, unable to find " + propFile);
 			}
+			if(new File(propFile).exists())
+			{
 			prop.load(input);
 			installedModpack = prop.getProperty("InstalledModpack");
 			if(installedModpack == null)
 			{
 				installedModpack = "no";
+			}
 			}
 			
 		} catch (Exception e) {
