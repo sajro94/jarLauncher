@@ -263,7 +263,7 @@ public class gui {
 			launchButton.setText("Launching in " + timeToLaunch);
 			if (timeToLaunch == 0) {
 				launchButton
-						.setText("Launching Minecraft\nOr downloading Modpack");
+						.setText("Launching");
 				String ramUsing = ram.getText();
 				String username = user.getText();
 				String password = String.valueOf(pass.getPassword());
