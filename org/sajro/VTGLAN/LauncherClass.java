@@ -1,20 +1,34 @@
 package org.sajro.VTGLAN;
 
 import java.io.File;
+import java.net.URL;
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.URLConnection;
+//import java.util.Dictionary;
 import java.util.Scanner;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.Properties;
 
+//import com.google.gson.Gson;
+//import com.google.gson.reflect.TypeToken;
+
+
+
+
+
+
+
+
+import javax.net.ssl.HttpsURLConnection;
 import javax.swing.JOptionPane;
 
 public class LauncherClass {
@@ -28,6 +42,7 @@ public class LauncherClass {
 	String installedModpack = "no";
 	OutputStream propOut = null;
 	InputStream input = null;
+	int responseCode;
 
 	public void main(String username, String password, String ramUsing,String dir) throws IOException 
 	{
@@ -53,47 +68,50 @@ public class LauncherClass {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		String valid = null;
-		String webData = null;
+		String valid = "yes";
 		System.out.println("Username:" + username + " ,password:" + password
 				+ " ,rams:" + ramUsing + " ,directory:" + dir);
-		try {
-			webData = new Scanner(
-					new URL("http://login.minecraft.net/?user=" + username
-							+ "&password=" + password + "&version=13")
-							.openStream(),
-					"UTF-8").useDelimiter("\\A").next();
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
+		String webDataLogin = null;
+		try
+		{
+			webDataLogin = login();
 		}
-		System.out.println(webData);
-
-		String[] sessions = webData.split(":");
-		if (sessions.length > 1) {
-			session = sessions[3];
-			user = sessions[2];
+		catch(Exception e)
+		{
+			JOptionPane.showOptionDialog(null, "Check network and or minecraft login servers.", "Network Error", -1, 0,null, null, null);
+		}
+		System.out.println(webDataLogin);
+		int tokenNum = webDataLogin.indexOf("\"accessToken\":")+14;
+		String sessionTemp = webDataLogin.substring(tokenNum, tokenNum+34);
+		session = sessionTemp.replaceAll("\"", "");
+		int userNumStart = webDataLogin.indexOf("\"name\":", webDataLogin.indexOf("\"selectedProfile\""))+8;
+		int userNumEnd = webDataLogin.indexOf(",",userNumStart);
+		String userTemp = webDataLogin.substring(userNumStart, userNumEnd);
+		user = userTemp.replaceAll("\"", "");
+		
+		System.out.println("session:"+session);
+		System.out.println("temp:"+sessionTemp);
+		System.out.println("name:"+user);
+		System.out.println("temp:"+userTemp);
+		propOut = new FileOutputStream("LauncherConfig.properties");
+		try {
 			prop.setProperty("sessionUser", user);
+			prop.setProperty("Password", pass);
+			prop.setProperty("Ram", ram);
+			prop.setProperty("Installed", "yes");
 			prop.setProperty("session", session);
-		} else {
-			session = "badLogin";
+		prop.setProperty("InstalledModpack", "yes");
+		prop.store(propOut, null);
 		}
-
-		try {
-			valid = new Scanner(
-					new URL(
-							"http://session.minecraft.net/game/joinserver.jsp?user="
-									+ user + "&sessionId=" + session
-									+ "&serverId=1").openStream(), "UTF-8")
-					.useDelimiter("\\A").next();
-
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
+		catch(Exception e)
+		{
+			
 		}
-		System.out.println("5" + valid + "5");
+		if(responseCode == 200)
+		{
+			valid = "OK";
+		}
+		
 		if (valid.equals("OK")) {
 			try {
 			} catch (Exception e1) {
@@ -107,7 +125,7 @@ public class LauncherClass {
 					connection = new URL(
 							"http://www.sajro.org/VTGLAN/VTGLAN/VTGLAN.zip")
 							.openConnection();
-				} catch (Exception e) {
+				} catch (IOException e) {
 					e.printStackTrace();
 				}
 				int maxDownloadSize = connection.getContentLength();
@@ -124,21 +142,27 @@ public class LauncherClass {
 									.useDelimiter("\\A").next();
 							System.out.println(modPackVersion);
 							System.out.println(dir + "\\version.html");
-							// List<String> lines =
-							// Files.readAllLines(Paths.get(dir+"version.html"),
-							// null);
-							localVersion = new Scanner(new URL("file:///" + dir
-									+ "\\version.html").openStream(), "UTF-8")
-									.useDelimiter("\\A").next();
+							localVersion = new Scanner(new URL("file:///"+dir+"\\version.html").openStream(),"UTF-8").useDelimiter("\\A").next();
 							System.out.println(localVersion);
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
 						if (localVersion.equals(modPackVersion)) {
-							try {
+							if(new File(dir+"\\bin\\minecraft.jar").exists())
+							{
+								try {
 								launchModPack(ramUsing, dir, user, session);
-							} catch (Exception e) {
-								e.printStackTrace();
+								} catch (Exception e) {
+									e.printStackTrace();
+								}
+							}
+							else
+							{
+								try {
+									new LauncherClass().extractModPack(ramUsing, user, session);
+								} catch (Exception e) {
+									e.printStackTrace();
+								}
 							}
 						} else {
 							if(!installedModpack.equals("yes"))
@@ -258,24 +282,12 @@ public class LauncherClass {
 		zis.closeEntry();
 		zis.close();
 		System.out.println(zipFile + " unzipped successfully");
+		new LauncherClass().launchModPack(ramUsing, dir, user, token);
 		
 	}
 
 	public void launchModPack(String ramUsing, String dirCurrent, String user,String token) throws Exception 
 	{
-		propOut = new FileOutputStream("LauncherConfig.properties");
-		try {
-			prop.setProperty("Username", user);
-			prop.setProperty("Password", pass);
-			prop.setProperty("Ram", ram);
-			prop.setProperty("Installed", "yes");
-		prop.setProperty("InstalledModpack", "yes");
-		prop.store(propOut, null);
-		}
-		catch(Exception e)
-		{
-			
-		}
 		console.main(null);
 	}
 
@@ -303,14 +315,57 @@ public class LauncherClass {
 			if (input == null) {
 				System.out.println("Sorry, unable to find " + propFile);
 			}
+			if(new File(propFile).exists())
+			{
 			prop.load(input);
-			String session = prop.getProperty("session");
-			String username = prop.getProperty("sessionUser");
-			String ramUsing = prop.getProperty("Ram");
-			new LauncherClass().extractModPack(ramUsing, username, session);
+			session = prop.getProperty("session");
+			user = prop.getProperty("sessionUser");
+			ramUsing = prop.getProperty("Ram");
+			}
+			new LauncherClass().extractModPack(ramUsing, user, session);
 
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
+	}
+	
+	public String login() throws IOException
+	{
+		
+		String loginUrl = "https://authserver.mojang.com/authenticate";
+		String payload = "{\"agent\": {\"name\": \"Minecraft\",\"version\": 1},\"username\":\"" + user + "\",\"password\":\"" + pass + "\",\"clientToken\": \"omitted\"}";
+		
+		URL login = new URL(loginUrl);
+		HttpsURLConnection con = (HttpsURLConnection) login.openConnection();
+		
+		con.setRequestMethod("POST");
+		con.setRequestProperty("Content-Type","application/json");
+				
+		System.out.println(payload);
+		
+		//Dictionary<String, String> jsonPayload = new Gson().fromJson(payload, new TypeToken<Dictionary<String, Integer>>() {}.getType());
+		
+		con.setDoOutput(true);
+		DataOutputStream wr = new DataOutputStream(con.getOutputStream());	
+		wr.writeBytes(payload);
+		wr.flush();
+		wr.close();
+		
+		responseCode = con.getResponseCode();
+		String responseMsg = con.getResponseMessage();
+		System.out.println("Use this number to check for sucess:"+responseCode);
+		System.out.println(responseMsg);
+		
+		BufferedReader in = new BufferedReader(
+		        new InputStreamReader(con.getInputStream()));
+		String inputLine;
+		StringBuffer response = new StringBuffer();
+ 
+		while ((inputLine = in.readLine()) != null) {
+			response.append(inputLine);
+		}
+		in.close();
+			
+		return response.toString();
 	}
 }
