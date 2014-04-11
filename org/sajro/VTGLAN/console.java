@@ -63,7 +63,7 @@ public class console extends JFrame {
 		
 		System.out.println("test test test");
 			new minecraftWorker().execute();
-			System.out.println("Launching Minecraft 2");
+			//System.out.println("Launching Minecraft 2"); //For debugging
 	}
 	private class minecraftWorker extends SwingWorker<String, String>
 	{
@@ -72,7 +72,7 @@ public class console extends JFrame {
 		protected String doInBackground() throws Exception 
 		{
 			consoleArea.setText("");
-			System.out.println("Launching Minecraft");
+			//System.out.println("Launching Minecraft"); //For debugging
 			String user = null;
 			String token = null;
 			String ramUsing = null;
@@ -155,7 +155,7 @@ public class console extends JFrame {
 						+ "\\assets --tweakClass cpw.mods.fml.common.launcher.FMLTweaker";
 				System.out.println(arguments);
 				Process minecraft = Runtime.getRuntime().exec("java "+arguments);
-				JOptionPane.showConfirmDialog(frame,"Launching Minecraft.", "Warning",-1);
+				//JOptionPane.showConfirmDialog(frame,"Launching Minecraft.", "Warning",-1); //For debugging
 				String line;
 				BufferedReader input1 = new BufferedReader(new InputStreamReader(minecraft.getErrorStream()));
 				  while ((line = input1.readLine()) != null) {
